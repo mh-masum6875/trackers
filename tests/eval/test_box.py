@@ -15,6 +15,30 @@ import pytest
 from trackers.eval.box import EPS, BoxFormat, box_ioa, box_iou
 
 
+class TestXywhPrecision:
+    """Preserve box extents before computing overlaps."""
+
+    @pytest.mark.parametrize("metric", [box_iou, box_ioa])
+    @pytest.mark.parametrize(
+        ("dtype", "x", "width"),
+        [
+            pytest.param(np.uint8, 200, 100, id="uint8"),
+            pytest.param(np.int16, 30000, 10000, id="int16"),
+            pytest.param(np.float16, 40000, 40000, id="float16"),
+            pytest.param(np.float64, 200, 100, id="float64"),
+        ],
+    )
+    def test_self_overlap_is_one(
+        self, metric: Callable[..., np.ndarray], dtype: type[np.number], x: float, width: float
+    ) -> None:
+        """Promote narrow coordinates before adding width to the origin."""
+        boxes = np.array([[x, 100, width, 50]], dtype=dtype)
+
+        result = metric(boxes, boxes, box_format="xywh")
+
+        np.testing.assert_array_equal(result, [[1.0]])
+
+
 class TestBoxIoU:
     """Pairwise intersection-over-union computation."""
 

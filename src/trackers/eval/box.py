@@ -162,16 +162,16 @@ def _calculate_box_ious(
             f"boxes1 and boxes2 must have matching trailing dimensions of at least 4, got {columns1} and {columns2}"
         )
 
+    # Promote before corner conversion so coordinate additions cannot overflow.
+    boxes1 = np.asarray(boxes1, dtype=np.float64)
+    boxes2 = np.asarray(boxes2, dtype=np.float64)
+
     # Convert xywh to xyxy if needed
     if box_format == "xywh":
         boxes1 = _xywh_to_xyxy(boxes1)
         boxes2 = _xywh_to_xyxy(boxes2)
     elif box_format != "xyxy":
         raise ValueError(f"box_format must be 'xyxy' or 'xywh', got '{box_format}'")
-
-    # Ensure float64 for numerical precision
-    boxes1 = np.asarray(boxes1, dtype=np.float64)
-    boxes2 = np.asarray(boxes2, dtype=np.float64)
 
     # xyxy layout: columns 0, 1, 2, 3 = x0, y0, x1, y1
     # Calculate intersection dimensions by broadcasting each coordinate plane
