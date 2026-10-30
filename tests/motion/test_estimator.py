@@ -7,9 +7,30 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from trackers.motion.estimator import MotionEstimator
-from trackers.motion.transformation import CoordinatesTransformation
+from trackers.motion.transformation import CoordinatesTransformation, HomographyTransformation
+
+
+class TestHomographyDenominator:
+    """Keep stabilized projective coordinates finite and on the correct side."""
+
+    @pytest.mark.parametrize("method", ["abs_to_rel", "rel_to_abs"])
+    @pytest.mark.parametrize(
+        ("scale", "expected_x"),
+        [(-1e-6, -10000.0), (-1e-10, -10000.0), (-1e-12, -10000.0), (1e-12, 10000.0), (1e-6, 10000.0), (1.0, 1.0)],
+    )
+    def test_preserves_sign(self, method: str, scale: float, expected_x: float) -> None:
+        """Small negative denominators must stay negative when clamped."""
+        matrix_scale = scale if method == "abs_to_rel" else 1.0 / scale
+        transform = HomographyTransformation(np.diag([1.0, 1.0, matrix_scale]))
+        points = np.array([[1.0, 2.0]])
+
+        with np.errstate(divide="raise", invalid="raise"):
+            result = getattr(transform, method)(points)
+
+        np.testing.assert_allclose(result, [[expected_x, expected_x * 2]])
 
 
 def _noise_frame(height: int, width: int, seed: int) -> np.ndarray:

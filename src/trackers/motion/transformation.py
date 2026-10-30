@@ -129,7 +129,7 @@ class HomographyTransformation(CoordinatesTransformation):
         min_scale = 1e-4
         homogeneous_scale = np.where(
             np.abs(homogeneous_scale) < min_scale,
-            np.sign(homogeneous_scale + 1e-10) * min_scale,
+            np.copysign(min_scale, homogeneous_scale),
             homogeneous_scale,
         )
         return transformed[:, :2] / homogeneous_scale
